@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Générateur de contrat</title>
+<style>
+  :root{--bg:#eef0f3;--panel:#fff;--ink:#1d2430;--muted:#6b7280;--line:#d9dde3;--accent:#1f4e79;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg);}
+  .app{display:grid;grid-template-columns:460px 1fr;height:100vh}
+  aside{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding:0}
+  aside header{position:sticky;top:0;background:var(--panel);z-index:5;padding:14px 18px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  aside header h1{font-size:16px;margin:0;flex:1 1 100%}
+  button{font:inherit;font-size:13px;padding:8px 12px;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  button:hover{filter:brightness(.96)}
+  .crumbs{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:2px 0;margin:2px 0 0;padding:0;list-style:none;font-size:12px}
+  .crumbs li{display:flex;align-items:center}
+  .crumbs li+li::before{content:"›";color:var(--muted);margin:0 6px}
+  .crumbs button{border:0;background:none;padding:3px 6px;border-radius:12px;color:var(--muted);cursor:pointer}
+  .crumbs button:hover{background:#eef2f6;color:var(--ink)}
+  .crumbs li.visited button{color:var(--accent)}
+  .crumbs li.current button{background:var(--accent);color:#fff;font-weight:600}
+  .stepnav{position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:10px 18px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .stepnav span{font-size:12px;color:var(--muted)}
+  button:disabled{opacity:.4;cursor:default}
+  details{border-bottom:1px solid var(--line);scroll-margin-top:110px}
+  summary{cursor:pointer;padding:12px 18px;font-weight:600;font-size:14px;background:#fafbfc}
+  .sec{padding:10px 18px 16px;display:grid;gap:10px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+  input[type=text],input[type=number],input[type=date],input[type=email],select,textarea{width:100%;font:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+  textarea{min-height:70px;resize:vertical}
+  .chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink);margin:0}
+  .chk input{margin-top:3px}
+  .hint{font-size:11.5px;color:var(--muted);margin:0}
+  main{overflow-y:auto;padding:24px}
+  .paper{background:#fff;width:210mm;max-width:100%;margin:0 auto;padding:20mm;box-shadow:0 2px 14px rgba(0,0,0,.15);
+    font-family:Georgia,"Times New Roman",serif;font-size:10.5pt;line-height:1.5;color:#111}
+  .paper .logo{max-height:22mm;max-width:60mm;display:block;margin-bottom:8mm}
+  .paper h1{font-size:19pt;text-align:center;margin:6mm 0 2mm;letter-spacing:.02em;color:var(--accent)}
+  .paper .ref{text-align:center;color:#555;font-size:9.5pt;margin-bottom:8mm}
+  .paper h2{font-size:11.5pt;margin:7mm 0 2mm;color:var(--accent);border-bottom:1px solid #cdd6df;padding-bottom:1mm;break-after:avoid}
+  .paper p{margin:0 0 2.5mm;text-align:justify}
+  .paper .party{margin:0 0 3mm;padding:3mm 4mm;border-left:3px solid var(--accent);background:#f5f8fb;break-inside:avoid}
+  .paper ul{margin:0 0 2.5mm 5mm;padding-left:4mm}
+  .paper .sign{display:grid;grid-template-columns:1fr 1fr;gap:12mm;margin-top:10mm;break-inside:avoid}
+  .paper .sign>div{border:1px solid #999;padding:3mm 4mm;font-size:10pt;display:flex;flex-direction:column}
+  .paper .sign .mention{color:#666;font-style:italic;font-size:9pt;margin-top:2mm}
+  .paper .sign .space{height:34mm}
+  .paper .sign strong{display:block;margin-bottom:1mm}
+  .ph{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:2px}
+  @page{size:A4;margin:20mm 18mm 28mm;
+    @bottom-center{content:"Page " counter(page) " / " counter(pages);font:9pt Georgia,serif;color:#666;vertical-align:middle}
+    @bottom-right{content:"Paraphes\A Prestataire : __________\A Client : __________";white-space:pre;text-align:right;vertical-align:middle;font:8pt Georgia,serif;line-height:1.7;color:#555}}
+  @media print{
+    body{background:#fff}
+    .app{display:block;height:auto}
+    aside{display:none}
+    main{overflow:visible;padding:0}
+    .paper{box-shadow:none;width:auto;padding:0;margin:0}
+    .ph{background:none;color:#b00020;font-weight:600}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+  @media(max-width:1000px){.app{grid-template-columns:1fr;height:auto}aside{max-height:60vh}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <header>
+    <h1>Générateur de contrat</h1>
+    <button class="primary" id="btnPdf">Générer le PDF</button>
+    <button id="btnReset">Réinitialiser</button>
+    <ol class="crumbs" id="crumbs" aria-label="Étapes"></ol>
+  </header>
+
+  <details data-label="Société"><summary>1. Votre société (Prestataire)</summary><div class="sec">
+    <div><label>Logo (PNG/JPG)</label><input type="file" id="logoFile" accept="image/*"><p class="hint"><a href="#" id="logoClear">Retirer le logo</a></p></div>
+    <div class="row2"><div><label>Raison sociale</label><input type="text" name="p_nom"></div><div><label>Forme juridique</label><input type="text" name="p_forme" placeholder="SAS, SARL…"></div></div>
+    <div class="row2"><div><label>Capital (€)</label><input type="text" name="p_capital"></div><div><label>RCS (ville + n°)</label><input type="text" name="p_rcs" placeholder="Nantes 123 456 789"></div></div>
+    <div><label>Adresse du siège</label><input type="text" name="p_adresse"></div>
+    <div class="row2"><div><label>N° TVA intracom.</label><input type="text" name="p_tva"></div><div><label>Email</label><input type="email" name="p_email"></div></div>
+    <div class="row2"><div><label>Représentant</label><input type="text" name="p_rep"></div><div><label>Qualité</label><input type="text" name="p_qualite" placeholder="Président, Gérant…"></div></div>
+  </div></details>
+
+  <details data-label="Client"><summary>2. Le Client</summary><div class="sec">
+    <div class="row2"><div><label>Raison sociale</label><input type="text" name="c_nom"></div><div><label>Forme juridique</label><input type="text" name="c_forme"></div></div>
+    <div class="row2"><div><label>Capital (€)</label><input type="text" name="c_capital"></div><div><label>RCS (ville + n°)</label><input type="text" name="c_rcs"></div></div>
+    <div><label>Adresse du siège</label><input type="text" name="c_adresse"></div>
+    <div class="row2"><div><label>N° TVA intracom.</label><input type="text" name="c_tva"></div><div><label>Email</label><input type="email" name="c_email"></div></div>
+    <div class="row2"><div><label>Représentant</label><input type="text" name="c_rep"></div><div><label>Qualité</label><input type="text" name="c_qualite"></div></div>
+  </div></details>
+
+  <details data-label="Prestations"><summary>3. Contrat et prestations</summary><div class="sec">
+    <div><label>Titre du contrat</label><input type="text" name="titre" value="Contrat de prestation de services"></div>
+    <div class="row2"><div><label>Référence</label><input type="text" name="ref"></div><div><label>Date de signature</label><input type="date" name="date"></div></div>
+    <div><label>Lieu de signature</label><input type="text" name="lieu"></div>
+    <div><label>Description des prestations</label><textarea name="prestations" placeholder="Une prestation par ligne"></textarea></div>
+    <div><label>Livrables attendus (facultatif)</label><textarea name="livrables" placeholder="Un livrable par ligne"></textarea></div>
+  </div></details>
+
+  <details data-label="Durée"><summary>4. Durée</summary><div class="sec">
+    <div class="row2"><div><label>Date de début</label><input type="date" name="debut"></div>
+    <div><label>Type</label><select name="duree_type"><option value="det">Durée déterminée</option><option value="indet">Durée indéterminée</option></select></div></div>
+    <div class="row2"><div><label>Durée (mois)</label><input type="number" name="duree_mois" value="12" min="1"></div><div><label>Préavis de résiliation (jours)</label><input type="number" name="preavis" value="30" min="0"></div></div>
+    <label class="chk"><input type="checkbox" name="tacite"> Reconduction tacite (durée déterminée)</label>
+  </div></details>
+
+  <details data-label="Prix"><summary>5. Prix et paiement</summary><div class="sec">
+    <div><label>Modèle de prix</label><select name="modele"><option value="forfait">Forfait</option><option value="regie">Régie (taux journalier)</option><option value="abo">Abonnement / redevance périodique</option></select></div>
+    <div class="row2"><div><label>Montant HT (€)</label><input type="number" name="montant" step="0.01" min="0"></div><div><label>Périodicité</label><select name="periode"><option value="aucune">Aucune (prestation ponctuelle)</option><option value="mois">Mensuelle</option><option value="trimestre">Trimestrielle</option><option value="année">Annuelle</option></select></div></div>
+    <div class="row2"><div><label>TVA (%)</label><input type="number" name="tvataux" value="20" step="0.1"></div><div><label>Délai de paiement (jours)</label><input type="number" name="delai" value="30" min="0" max="60"></div></div>
+    <div><label>Échéancier / précisions</label><textarea name="echeancier" placeholder="Ex. 30 % à la signature, 70 % à la livraison"></textarea></div>
+    <label class="chk"><input type="checkbox" name="penalites" checked> Pénalités de retard et indemnité de recouvrement (40 €)</label>
+    <p class="hint" id="syntecNote"></p>
+  </div></details>
+
+  <details data-label="Clauses"><summary>6. Clauses optionnelles</summary><div class="sec">
+    <div><label>Propriété intellectuelle</label><select name="pi"><option value="cession">Cession des droits au Client après paiement intégral</option><option value="licence">Licence d'utilisation non exclusive</option><option value="prestataire">Le Prestataire conserve ses droits</option></select></div>
+    <label class="chk"><input type="checkbox" name="confid" checked> Confidentialité</label>
+    <label class="chk"><input type="checkbox" name="rgpd" checked> Protection des données personnelles (RGPD)</label>
+    <label class="chk"><input type="checkbox" name="plafond" checked> Plafonnement de la responsabilité du Prestataire</label>
+    <label class="chk"><input type="checkbox" name="nonsol"> Non-sollicitation du personnel</label>
+    <div><label>Tribunal de commerce compétent (ville)</label><input type="text" name="tribunal"></div>
+  </div></details>
+
+  <div class="sec"><p class="hint">Les champs manquants apparaissent surlignés dans l'aperçu. Les numéros de page et les paraphes (Prestataire / Client) s'ajoutent en bas de chaque page du PDF. Les données sont conservées dans ce navigateur. Ce modèle est une base courante : faites-le valider par un juriste avant usage.</p></div>
+  <div class="stepnav">
+    <button id="btnPrev">← Précédent</button>
+    <span id="stepLabel"></span>
+    <button id="btnNext" class="primary">Suivant →</button>
+  </div>
+</aside>
+<main><article class="paper" id="doc"></article></main>
+</div>
+
+<script>
+const KEY='generateur-contrat-v1';
+const form=document.querySelector('aside');
+const els=[...form.querySelectorAll('[name]')];
+let state={};
+try{state=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ph=l=>`<span class="ph">[${esc(l)}]</span>`;
+const v=(k,l)=>{const x=(state[k]??'').toString().trim();return x?esc(x):ph(l||k)};
+const lines=k=>(state[k]||'').split('\n').map(s=>s.trim()).filter(Boolean);
+const list=k=>{const a=lines(k);return a.length?'<ul>'+a.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>':ph('à compléter')};
+const eur=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(n);
+const dateFr=d=>d?new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):null;
+const dv=(k,l)=>{const d=dateFr(state[k]);return d?esc(d):ph(l)};
+
+function load(){
+  els.forEach(el=>{
+    if(!(el.name in state)){state[el.name]=el.type==='checkbox'?el.checked:el.value;}
+    if(el.type==='checkbox')el.checked=!!state[el.name];else el.value=state[el.name];
+  });
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+
+function party(px,role,label){
+  const g=k=>v(px+'_'+k,k);
+  return `<div class="party"><strong>${v(px+'_nom','Raison sociale')}</strong>, ${v(px+'_forme','forme')} au capital de ${v(px+'_capital','capital')} €,
+  immatriculée au RCS de ${v(px+'_rcs','RCS')}, dont le siège social est situé ${v(px+'_adresse','adresse')},
+  n° de TVA intracommunautaire ${v(px+'_tva','TVA')}, représentée par ${v(px+'_rep','représentant')} en sa qualité de ${v(px+'_qualite','qualité')}.<br>
+  Ci-après dénommée « <strong>${role}</strong> ».</div>`;
+}
+
+/* Indice Syntec révisé (base 100 en 1961) – [mois, valeur, date de publication]
+   À compléter chaque fin de mois (publication par la Fédération Syntec). */
+const SYNTEC=[
+  ['janvier 2026',323.1,'2026-02-27',true], // date de parution approximative : non imprimée dans le contrat
+  ['février 2026',322.9,'2026-03-31'],
+  ['mars 2026',321.7,'2026-04-30'],
+  ['avril 2026',321.9,'2026-05-29'],
+  ['mai 2026',321.8,'2026-06-30'],
+  ['juin 2026',321.7,'2026-07-31'],
+  ['juillet 2026',321.5,'2026-08-31'],
+  ['août 2026',320.4,'2026-09-30']
+];
+function syntecRef(){
+  const sig=state.date||new Date().toISOString().slice(0,10);
+  let ref=null;
+  for(const e of SYNTEC) if(e[2]<=sig) ref=e;
+  ref=ref||SYNTEC[SYNTEC.length-1];
+  const last=SYNTEC[SYNTEC.length-1];
+  const stale=new Date(sig+'T12:00:00').getTime()>new Date(last[2]+'T12:00:00').getTime()+35*864e5;
+  return {mois:ref[0],val:ref[1].toFixed(1).replace('.',','),pub:ref[3]?null:dateFr(ref[2]),stale};
+}
+
+function clauses(){
+  const s=state, C=[];
+  const montant=parseFloat(s.montant);
+  const m=isNaN(montant)?ph('montant'):`<strong>${eur(montant)} HT</strong>`;
+  const dureeTxt=s.duree_type==='indet'
+    ?`Le présent contrat est conclu pour une durée indéterminée à compter du ${dv('debut','date de début')}. Chaque Partie peut y mettre fin moyennant un préavis de ${esc(s.preavis||0)} jours notifié par lettre recommandée avec accusé de réception.`
+    :`Le présent contrat prend effet le ${dv('debut','date de début')} pour une durée de ${esc(s.duree_mois||'?')} mois.`+
+      (s.tacite?` À son terme, il est reconduit tacitement pour des périodes successives de même durée, sauf dénonciation par l'une des Parties par lettre recommandée avec accusé de réception moyennant un préavis de ${esc(s.preavis||0)} jours avant l'échéance.`
+               :` Il prend fin de plein droit à cette échéance, sans tacite reconduction.`);
+
+  C.push(['Objet',`<p>Le présent contrat a pour objet de définir les conditions dans lesquelles le Prestataire réalise pour le Client les prestations suivantes (les « <strong>Prestations</strong> ») :</p>${list('prestations')}`+
+    (lines('livrables').length?`<p>Les Prestations donnent lieu à la remise des livrables suivants :</p>${list('livrables')}`:'')]);
+
+  C.push(['Obligations du Prestataire',`<p>Le Prestataire s'engage à exécuter les Prestations avec diligence, conformément aux règles de l'art et aux usages de la profession, en mobilisant un personnel qualifié. Il est tenu d'une obligation de moyens. Il informe le Client, dès qu'il en a connaissance, de toute difficulté susceptible de compromettre la bonne exécution des Prestations.</p>`]);
+
+  C.push(['Obligations du Client',`<p>Le Client s'engage à collaborer activement à la bonne exécution des Prestations, notamment en fournissant dans des délais raisonnables les informations, documents et accès nécessaires, et en désignant un interlocuteur disposant du pouvoir de décision. Tout retard du Client dans cette collaboration peut entraîner un décalage équivalent des délais d'exécution, sans engager la responsabilité du Prestataire.</p>`]);
+
+  C.push(['Durée',`<p>${dureeTxt}</p>`]);
+
+  let prix='';
+  if(s.modele==='regie')prix=`<p>Les Prestations sont facturées en régie, sur la base d'un taux journalier de ${m} par jour de travail effectif, selon le temps réellement passé.</p>`;
+  else if(s.modele==='abo'&&s.periode==='aucune')prix=`<p>En contrepartie des Prestations, qui sont réalisées une seule fois, le Client verse au Prestataire un montant unique de ${m}.</p>`;
+  else if(s.modele==='abo')prix=`<p>En contrepartie des Prestations, le Client verse au Prestataire une redevance de ${m} par ${esc(s.periode||'mois')}.</p>`;
+  else prix=`<p>Les Prestations sont facturées au forfait de ${m}.</p>`;
+  if((s.echeancier||'').trim())prix+=`<p>Modalités de facturation : ${esc(s.echeancier).replace(/\n/g,'<br>')}</p>`;
+  prix+=`<p>Ces montants sont exprimés hors taxes et majorés de la TVA au taux en vigueur (${esc(s.tvataux||20)} % à la date de signature). Les factures sont payables par virement dans un délai de ${esc(s.delai||30)} jours à compter de leur date d'émission.</p>`;
+  if(s.penalites)prix+=`<p>Tout retard de paiement entraîne de plein droit, dès le lendemain de la date d'échéance et sans mise en demeure préalable, l'application de pénalités de retard égales à trois fois le taux d'intérêt légal, ainsi que d'une indemnité forfaitaire de 40 € pour frais de recouvrement (articles L. 441-10 et D. 441-5 du Code de commerce). Le Prestataire se réserve en outre le droit de suspendre les Prestations en cas d'impayé.</p>`;
+  const sr=syntecRef();
+  prix+=`<p>Les prix sont révisés de plein droit une fois par an, à la date anniversaire de la prise d'effet du contrat, en fonction de la variation de l'indice Syntec (base 100 en 1961), selon la formule suivante : <strong>P1 = P0 × (S1 / S0)</strong>, dans laquelle :</p>
+  <ul><li><strong>P1</strong> est le prix révisé ;</li>
+  <li><strong>P0</strong> est le prix d'origine ou, le cas échéant, le dernier prix révisé ;</li>
+  <li><strong>S0</strong> est l'indice Syntec de référence, soit l'indice du mois de ${sr.mois}, d'une valeur de <strong>${sr.val}</strong>${sr.pub?` et publié le <strong>${sr.pub}</strong>`:''}, qui est le dernier indice publié à la date de signature du contrat ;</li>
+  <li><strong>S1</strong> est le dernier indice Syntec publié à la date de révision.</li></ul>
+  <p>En cas de disparition ou de modification substantielle de l'indice, celui-ci est remplacé par l'indice qui lui est substitué ou, à défaut, par un indice équivalent choisi d'un commun accord entre les Parties.</p>`;
+  C.push(['Prix et modalités de paiement',prix]);
+
+  const pi={cession:`<p>Sous réserve du paiement intégral du prix, le Prestataire cède au Client, à titre exclusif et pour toute la durée de protection légale, les droits patrimoniaux d'exploitation sur les livrables spécifiquement créés pour lui. Les outils, méthodes, savoir-faire et composants préexistants du Prestataire demeurent sa propriété.</p>`,
+    licence:`<p>Le Prestataire concède au Client un droit d'utilisation non exclusif, non transférable, pour les besoins internes de son activité et pour la durée du contrat. Le Prestataire reste titulaire de l'ensemble des droits de propriété intellectuelle sur les livrables, outils et méthodes.</p>`,
+    prestataire:`<p>Chaque Partie conserve la propriété de ses droits de propriété intellectuelle préexistants. Le Prestataire demeure titulaire des droits sur les éléments qu'il développe dans le cadre des Prestations ; le Client bénéficie d'un droit d'usage nécessaire à l'utilisation conforme des livrables.</p>`};
+  C.push(['Propriété intellectuelle',pi[s.pi]||pi.cession]);
+
+  if(s.confid)C.push(['Confidentialité',`<p>Chaque Partie s'engage à garder strictement confidentielles les informations de l'autre Partie dont elle a connaissance à l'occasion du contrat, à ne les utiliser que pour son exécution et à ne les divulguer qu'aux personnes ayant besoin d'en connaître et tenues à une obligation équivalente. Cet engagement demeure en vigueur pendant la durée du contrat et cinq (5) ans après son terme. Il ne s'applique pas aux informations publiques, déjà connues de la Partie destinataire ou dont la divulgation est exigée par la loi ou une autorité.</p>`]);
+
+  if(s.rgpd)C.push(['Données personnelles',`<p>Chaque Partie s'engage à respecter la réglementation applicable en matière de protection des données personnelles, notamment le Règlement (UE) 2016/679 (RGPD) et la loi Informatique et Libertés. Lorsque le Prestataire traite des données personnelles pour le compte du Client, il agit en qualité de sous-traitant, n'agit que sur instruction documentée du Client, garantit la sécurité et la confidentialité des données et l'assiste dans le respect de ses obligations. Les Parties formalisent si nécessaire ces engagements dans un accord de traitement des données.</p>`]);
+
+  C.push(['Responsabilité',`<p>Chaque Partie est responsable des dommages directs causés à l'autre Partie du fait de l'inexécution de ses obligations.`+
+    (s.plafond?` La responsabilité du Prestataire, tous dommages confondus, est limitée au montant total hors taxes effectivement payé par le Client au titre du contrat au cours des douze (12) mois précédant le fait générateur de responsabilité.`:'')+
+    ` Aucune Partie n'est tenue des dommages indirects tels que perte d'exploitation, perte de clientèle ou atteinte à l'image. Ces stipulations ne s'appliquent pas en cas de faute lourde ou dolosive.</p>`]);
+
+  if(s.nonsol)C.push(['Non-sollicitation',`<p>Pendant la durée du contrat et douze (12) mois après son terme, chaque Partie s'interdit de solliciter ou d'embaucher, directement ou indirectement, tout collaborateur de l'autre Partie ayant participé à l'exécution des Prestations, sauf accord écrit préalable.</p>`]);
+
+  C.push(['Résiliation',`<p>En cas de manquement grave de l'une des Parties à ses obligations, non réparé dans un délai de trente (30) jours à compter d'une mise en demeure adressée par lettre recommandée avec accusé de réception, l'autre Partie peut résilier le contrat de plein droit, sans préjudice de tous dommages et intérêts. Les Prestations déjà réalisées jusqu'à la date de résiliation restent dues.</p>`]);
+
+  C.push(['Force majeure',`<p>Aucune Partie n'est responsable de l'inexécution de ses obligations lorsque celle-ci résulte d'un événement de force majeure au sens de l'article 1218 du Code civil. Si l'événement dure plus de soixante (60) jours, chaque Partie peut résilier le contrat par notification écrite, sans indemnité.</p>`]);
+
+  C.push(['Dispositions générales',`<p>Le contrat exprime l'intégralité de l'accord des Parties et remplace tout accord antérieur relatif au même objet. Toute modification doit faire l'objet d'un avenant écrit signé des deux Parties. Si une stipulation est déclarée nulle ou inapplicable, les autres demeurent en vigueur. Le fait pour une Partie de ne pas se prévaloir d'un manquement ne vaut pas renonciation. Le contrat ne peut être cédé par l'une des Parties sans l'accord écrit préalable de l'autre.</p>`]);
+
+  C.push(['Droit applicable et juridiction',`<p>Le contrat est soumis au droit français. Les Parties s'efforcent de résoudre à l'amiable tout différend relatif à sa formation, son interprétation ou son exécution. À défaut d'accord amiable dans un délai de trente (30) jours, compétence exclusive est attribuée au Tribunal de commerce de ${v('tribunal','ville')}, y compris en cas de référé, d'appel en garantie ou de pluralité de défendeurs.</p>`]);
+  return C;
+}
+
+function render(){
+  const s=state;
+  const sr=syntecRef();
+  document.getElementById('syntecNote').innerHTML="Révision annuelle appliquée d'office, indexée sur l'indice Syntec. Indice de référence retenu : <strong>"+sr.mois+" = "+sr.val+"</strong>"+(sr.pub?", publié le "+sr.pub:"")+" (dernier publié à la date de signature)."+(sr.stale?' <strong style="color:#b00020">Un indice plus récent a dû être publié : la table des indices est à mettre à jour.</strong>':'');
+  const logo=s.logo?`<img class="logo" src="${s.logo}" alt="Logo">`:'';
+  const C=clauses().map((c,i)=>`<h2>Article ${i+1} – ${c[0]}</h2>${c[1]}`).join('');
+  document.getElementById('doc').innerHTML=`
+    ${logo}
+    <h1>${v('titre','Titre')}</h1>
+    <div class="ref">${s.ref?'Référence : '+esc(s.ref)+' – ':''}${s.date?dv('date',''):''}</div>
+    <p><strong>ENTRE LES SOUSSIGNÉS :</strong></p>
+    ${party('p','le Prestataire')}
+    <p style="text-align:center"><strong>ET</strong></p>
+    ${party('c','le Client')}
+    <p>Le Prestataire et le Client étant ci-après désignés ensemble les « <strong>Parties</strong> » et individuellement une « <strong>Partie</strong> ».</p>
+    <p><strong>IL A ÉTÉ CONVENU ET ARRÊTÉ CE QUI SUIT :</strong></p>
+    ${C}
+    <p style="margin-top:8mm;break-after:avoid">Fait à ${v('lieu','lieu')}, le ${dv('date','date')}, en deux (2) exemplaires originaux.</p>
+    <div class="sign">
+      <div><strong>Pour le Prestataire</strong>${v('p_nom','Prestataire')}<br>${v('p_rep','représentant')}, ${v('p_qualite','qualité')}<div class="mention">Signature précédée de la mention « Lu et approuvé »</div><div class="space"></div></div>
+      <div><strong>Pour le Client</strong>${v('c_nom','Client')}<br>${v('c_rep','représentant')}, ${v('c_qualite','qualité')}<div class="mention">Signature précédée de la mention « Lu et approuvé »</div><div class="space"></div></div>
+    </div>`;
+}
+
+form.addEventListener('input',e=>{
+  const el=e.target; if(!el.name)return;
+  state[el.name]=el.type==='checkbox'?el.checked:el.value;
+  save();render();
+});
+
+document.getElementById('logoFile').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      const max=500,k=Math.min(1,max/img.width);
+      const c=document.createElement('canvas');c.width=img.width*k;c.height=img.height*k;
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      state.logo=c.toDataURL('image/png');save();render();
+    };
+    img.src=r.result;
+  };
+  r.readAsDataURL(f);
+});
+document.getElementById('logoClear').addEventListener('click',e=>{e.preventDefault();delete state.logo;document.getElementById('logoFile').value='';save();render();});
+document.getElementById('btnPdf').addEventListener('click',()=>{
+  const prev=document.title;
+  document.title=(state.titre||'Contrat')+(state.c_nom?' - '+state.c_nom:'');
+  window.print();
+  setTimeout(()=>document.title=prev,500);
+});
+document.getElementById('btnReset').addEventListener('click',()=>{
+  if(confirm('Effacer toutes les données saisies ?')){localStorage.removeItem(KEY);location.reload();}
+});
+
+/* ---- Fil d'ariane / navigation par étapes ---- */
+const steps=[...form.querySelectorAll('details')];
+const crumbs=document.getElementById('crumbs');
+const visited=new Set();
+let cur=0;
+steps.forEach((d,i)=>{
+  const li=document.createElement('li');
+  const b=document.createElement('button');
+  b.type='button';b.textContent=(i+1)+'. '+d.dataset.label;
+  b.addEventListener('click',()=>go(i));
+  li.appendChild(b);crumbs.appendChild(li);
+  d.querySelector('summary').addEventListener('click',e=>{e.preventDefault();go(i);});
+});
+function go(i){
+  cur=Math.max(0,Math.min(steps.length-1,i));
+  visited.add(cur);
+  steps.forEach((d,k)=>{d.open=(k===cur)});
+  [...crumbs.children].forEach((li,k)=>{
+    li.classList.toggle('current',k===cur);
+    li.classList.toggle('visited',k!==cur&&visited.has(k));
+    li.firstChild.setAttribute('aria-current',k===cur?'step':'false');
+  });
+  document.getElementById('btnPrev').disabled=cur===0;
+  const nx=document.getElementById('btnNext');
+  nx.disabled=cur===steps.length-1;
+  nx.textContent=cur===steps.length-2?'Dernière étape →':'Suivant →';
+  document.getElementById('stepLabel').textContent='Étape '+(cur+1)+' / '+steps.length;
+  form.scrollTo({top:0,behavior:'smooth'});
+  try{localStorage.setItem(KEY+'-step',cur)}catch(e){}
+}
+document.getElementById('btnPrev').addEventListener('click',()=>go(cur-1));
+document.getElementById('btnNext').addEventListener('click',()=>go(cur+1));
+
+load();render();
+let startStep=0;
+try{startStep=parseInt(localStorage.getItem(KEY+'-step')||'0',10)||0}catch(e){}
+go(startStep);
+</script>
+</body>
+</html>
